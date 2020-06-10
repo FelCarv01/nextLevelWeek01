@@ -6,6 +6,7 @@ class PointController {
         const {
             name,
             email,
+            image,
             whatsapp,
             latitude,
             longitude,
@@ -24,18 +25,21 @@ class PointController {
             longitude,
             city,
             uf,
-            image: 'image-fake'
+            image: req.file.filename
         };
 
         const insertedId = await trx('points').insert(point);
 
         const point_id = insertedId[0]
-        const pointItems = items.map((item_id: number) => {
-            return {
-                item_id,
-                point_id,
-            };
-        });
+        const pointItems = items
+            .split(',')
+            .map((item: string) => Number(item.trim()))
+            .map((item_id: number) => {
+                return {
+                    item_id,
+                    point_id,
+                };
+            });
         await trx('points_items').insert(pointItems);
 
         await trx.commit();
@@ -63,17 +67,17 @@ class PointController {
         const { city, uf, items } = req.query;
 
         const parsedItems = String(items)
-        .split(',')
-        .map(item => Number(item.trim()));
+            .split(',')
+            .map(item => Number(item.trim()));
 
         const points = await knex('points')
-        .join('points_items', 'points.id', '=', 'points_items.point_id')
-        .whereIn('points_items.item_ide', parsedItems)
-        .where('city', String(city))
-        .where('uf', String(uf))
-        .distinct()
-        .select('points.*');
-        
+            .join('points_items', 'points.id', '=', 'points_items.point_id')
+            .whereIn('points_items.item_id', parsedItems)
+            .where('city', String(city))
+            .where('uf', String(uf))
+            .distinct()
+            .select('points.*');
+
 
         return res.json(points);
 
